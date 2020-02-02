@@ -141,11 +141,14 @@ The Current Maintainer of this work is
 \cs_set_eq:NN \__codedoc_macro_end_style:n \use_none:n
 \ExplSyntaxOff
 \DeclareRobustCommand \opt {\texttt}
+\def\glossaryname{Changes History}
+\GlossaryPrologue{\section{\glossaryname}}
 \EnableCrossrefs
 \CodelineIndex
 \RecordChanges
 \begin{document}
   \DocInput{\jobname.dtx}
+  \PrintChanges
 \end{document}
 %</driver>
 % \fi
@@ -174,7 +177,7 @@ The Current Maintainer of this work is
 %   marco \cs{setsecnum} in preamble.
 %  \begin{function}{\setsecnum}
 %  \begin{syntax}
-%    \cs{setsecnum} \meta{num format}
+%    \cs{setsecnum}\marg{num format}
 %  \end{syntax}
 %    A typical \meta{num format} is like this:
 %  \begin{center}
@@ -223,17 +226,17 @@ The Current Maintainer of this work is
 %   The following is the implementation. 
 %   Users can ignore.
 % \subsection{Preparations}
-%   This document class uses \LaTeX3. 
-%   Therefore, the packages \pkg{expl3}, \pkg{xparse} 
-%   and \pkg{l3keys2e} are needed and should use 
-%   \cs{ProvidesExplClass} rather than \cs{ProvidesClass}.
+%   This package uses \LaTeX3. 
+%   Therefore, the packages \pkg{expl3} and \pkg{xparse}
+%   are needed and should use 
+%   \cs{ProvidesExplPackage} rather than \cs{ProvidesPackage}.
 %
 %    \begin{macrocode}
 %<*package>
 %<@@=syu>
 \NeedsTeXFormat{LaTeX2e}
 \RequirePackage{expl3}
-\ProvidesExplPackage{secnum}{2020/01/01}{}
+\ProvidesExplPackage{secnum}{2020/02/02}{}
   { An intuitive way to format section numbering }
 \RequirePackage{xparse}
 %    \end{macrocode}
@@ -298,33 +301,35 @@ The Current Maintainer of this work is
 %    \end{macrocode}
 %   Replace syntax abbrs by corresponding macros.
 %    \begin{macrocode}
-    \syu_secnum_unabbr:N \l__syu_secnum_tl
+    \__syu_secnum_unabbr:N \l__syu_secnum_tl
 %    \end{macrocode}
 %   Split into a sequence by macros.
 %    \begin{macrocode}
-    \syu_split_by_macros:NN \l__syu_secnum_tl \l__syu_secnum_seq
+    \__syu_split_by_macros:NN \l__syu_secnum_tl \l__syu_secnum_seq
 %    \end{macrocode}
 %   Read formatting information.
 %    \begin{macrocode}
-    \syu_secnum_from_seq:N \l__syu_secnum_seq
+    \__syu_secnum_from_seq:N \l__syu_secnum_seq
 %    \end{macrocode}
-%   Set the \opt{secnumdepth}.
+%   Set the \opt{secnumdepth} and \opt{tocdepth}.
+%   \changes{2020/01/12}{2020/01/12}{Add codes to set \opt{tocdepth}.}
 %    \begin{macrocode}
     \setcounter{secnumdepth}{ \seq_count:N \l__syu_secnum_seq }
+    \setcounter{tocdepth}{ \seq_count:N \l__syu_secnum_seq }
 %    \end{macrocode}
 %   Format numberings.
 %    \begin{macrocode}
-    \syu_secnum:
+    \__syu_secnum:
   }
 %    \end{macrocode}
 %  \end{macro}
 %
 % \subsection{Unabbravation}
-%  \begin{variable}{ \syu_secnum_unabbr:N }
+%  \begin{variable}{ \__syu_secnum_unabbr:N }
 %   This function replace the abbrs in a \meta{tl var}  
 %   by expansions.
 %    \begin{macrocode}
-\cs_new_protected:Npn \syu_secnum_unabbr:N #1
+\cs_new_protected:Npn \__syu_secnum_unabbr:N #1
   {
     \regex_replace_all:nnN {A} {\c{Alph}} #1
     \regex_replace_all:nnN {a} {\c{alph}} #1
@@ -336,11 +341,11 @@ The Current Maintainer of this work is
 %  \end{variable}
 %
 % \subsection{Split to sequence}
-%  \begin{variable}{ \syu_split_by_macros:NN }
+%  \begin{variable}{ \__syu_split_by_macros:NN }
 %   This function split a \meta{tl var} into a \meta{sequence} 
 %   by macros.
 %    \begin{macrocode}
-\cs_new_protected:Npn \syu_split_by_macros:NN #1 #2
+\cs_new_protected:Npn \__syu_split_by_macros:NN #1 #2
   {
     \tl_clear:N \l_tmpa_tl
     \seq_clear:N #2
@@ -397,10 +402,10 @@ The Current Maintainer of this work is
 %  \end{variable}
 %
 % \subsection{Read formatting info}
-%  \begin{variable}{ \syu_secnum_from_seq:N  }
+%  \begin{variable}{ \__syu_secnum_from_seq:N  }
 %   Read the formatting info from given \meta{sequence}.
 %    \begin{macrocode}
-\cs_new_protected:Npn \syu_secnum_from_seq:N #1
+\cs_new_protected:Npn \__syu_secnum_from_seq:N #1
   {
 %    \end{macrocode}
 %   Use \cs{tl_gset:Nx} since: 1, these data are global and 
@@ -423,10 +428,10 @@ The Current Maintainer of this work is
 %  \end{variable}
 %
 % \subsection{Formatting}
-%  \begin{variable}{ \syu_secnum:  }
+%  \begin{variable}{ \__syu_secnum:  }
 %   Formatting section numbering.
 %    \begin{macrocode}
-\cs_new:Nn \syu_secnum: 
+\cs_new:Nn \__syu_secnum: 
   {
 %    \end{macrocode}
 %   When \cs{thechapter} is defined, start from it.
@@ -469,7 +474,7 @@ The Current Maintainer of this work is
 %\end{implementation}
 %
 %
-% \changes{}{2020/01/01}{Correct the package name.}
+% \changes{2020/01/01}{2020/01/01}{Correct the package name.}
 %
 % \Finale
 \endinput
