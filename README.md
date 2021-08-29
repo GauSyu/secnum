@@ -5,8 +5,16 @@ This package provides a macro \setsecnum to format section numbering intuitively
 
 ## Usage
 
-One can simply use `\setsecnum{1.1.1}` to set the section numbering
-format as `arabic.arabic.arabic` and depth to be 3.
+One can simply use `\setsecnum{A,i.1}` to set the section numbering
+format as `Alph` for the sections, `roman` for the subsections and
+`roman.arabic` for the subsubsections and
+the secnumdepth and tocdepth will be 3.
+
+If one want to set the tocdepth manually,
+there is an option `tocdep` for it.
+
+One may notice that the comma `,` plays a special role in the numbering format:
+for deep levels, the numbering before the comma are hided.
 
 ## Installation
 
