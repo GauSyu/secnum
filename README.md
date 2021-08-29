@@ -1,7 +1,7 @@
 
 # secnum
 
-This package provides a macro \setsecnum to format section numbering intuitively.
+This package provides a macro `\setsecnum` to format section numbering intuitively.
 
 ## Usage
 
