@@ -8,7 +8,7 @@ This package provides a macro \setsecnum to format section numbering intuitively
 One can simply use `\setsecnum{A,i.1}` to set the section numbering
 format as `Alph` for the sections, `roman` for the subsections and
 `roman.arabic` for the subsubsections and
-the secnumdepth and tocdepth will be 3.
+the `secnumdepth` and `tocdepth` will be 3.
 
 If one want to set the tocdepth manually,
 there is an option `tocdep` for it.
