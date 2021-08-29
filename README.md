@@ -5,9 +5,9 @@ This package provides a macro `\setsecnum` to format section numbering intuitive
 
 ## Usage
 
-One can simply use `\setsecnum{A,i.1}` to set the section numbering
-format as `Alph` for the sections, `roman` for the subsections and
-`roman.arabic` for the subsubsections and
+One can simply use `\setsecnum{A,1.i}` to set the section numbering
+format as `Alph` for the sections, `arabic` for the subsections and
+`arabic.roman` for the subsubsections and
 the `secnumdepth` and `tocdepth` will be 3.
 
 If one want to set the tocdepth manually,
@@ -24,7 +24,7 @@ The installation is the same as usual Tex packages.
 
 1. Run the following to create the package file `secnum.sty` (as well as this file `README.md`)
 
-       XeTeX secnum.dtx
+       pdfTeX secnum.dtx
 
 2. Move the following file into proper directories searched by TeX.
    The recommended directory is
@@ -33,7 +33,7 @@ The installation is the same as usual Tex packages.
 
 3. To produce the documentation run the following
 
-       XeLaTeX secnum.dtx
+       pdfLaTeX secnum.dtx
 
 4. The recommended directory for the documentation is
 
