@@ -33,7 +33,7 @@ This package provides a macro `\setsecnum` to format section numbering intuitive
 
 ## Usage
 
-One can simply use `\setsecnum{A,1.i}` to set the section numbering
+One can simply use `\setsecnum{A,:1.i}` to set the section numbering
 format as `Alph` for the sections, `arabic` for the subsections and 
 `arabic.roman` for the subsubsections and 
 the `secnumdepth` and `tocdepth` will be 3. 
@@ -42,7 +42,7 @@ If one want to set the tocdepth manually,
 there is an option `tocdep` for it.
 
 One may notice that the comma `,` plays a special role in the numbering format:
-for deep levels, the numbering before the comma are hided.
+for deep levels, the numbering before the comma are hided in the titles.
 
 ## Installation
 
@@ -144,7 +144,7 @@ The Current Maintainer of this work is
 \usepackage{booktabs}
 \usepackage{xcolor}
 \usepackage[tocdep=2]{secnum}
-\setsecnum{A,1.i}
+\setsecnum{A,:1.i}
 \ExplSyntaxOn
 \cs_set_eq:NN \__codedoc_macro_end_style:n \use_none:n
 \ExplSyntaxOff
@@ -181,7 +181,7 @@ The Current Maintainer of this work is
 %    This document uses the following setting of section numbering format.
 %  \begin{verbatim}
 %    \usepackage[tocdep=2]{secnum}
-%    \setsecnum{A,1.i}
+%    \setsecnum{A,:1.i}
 %  \end{verbatim}
 %
 % \section{Usage}
@@ -200,7 +200,7 @@ The Current Maintainer of this work is
 %
 %    A typical \meta{num format} is like this:
 %  \begin{center}
-%    \verb|A,1.i|
+%    \verb|A,:1.i|
 %  \end{center}
 %    It consists of some syntax abbrs of numbering formats, 
 %    reffering the follows,
@@ -215,7 +215,7 @@ The Current Maintainer of this work is
 %  \end{center}
 %   and some separators delimiting them. 
 %
-%   The separators can be any character except above abbrs, 
+%   A separator can contain any character except above abbrs, 
 %   the tokens ``\verb|{|'', ``\verb|}|'' and ``\verb|#|''
 %   (more precisely, explicit character tokens with category code
 %   1 (begin-group) or 2 (end-group), and tokens with category code 6) and the space ``\verb*| |''.
@@ -229,13 +229,16 @@ The Current Maintainer of this work is
 %  \end{function}
 %  
 % \subsection{Breaking the numbering}
-%    The comma ``\verb|,|'' in above example is used as the breaking mark:
-%    for deep levels (in our case, deeper than sections), 
-%    the numbering before ``\verb|,|'' will be hided.
+%    The comma ``\verb|,|'' in above example is used as the breaking mark.
+%    When a separator contains a comma 
+%    (in our example, \verb|,:| between \verb|A| and \verb|1|), 
+%    the shallower section levels (in our example, \cs{thesection}) 
+%    will not be shown in titles of deeper levels 
+%    (in our example, \cs{thesubsection} and \cs{thesubsubsection}).
+%    However, the numbering will appear in the reference labels with the given separator removing the comma.
+%    For instance, the next subsection is refered as \ref{Options}.
 %
-%    Note that the breaking mark must immediately follows an abbr.
-%
-% \subsection{Package options}
+% \subsection{Package options}\label{Options}
 % \subsubsection{tocdep}
 %   There is an option setting \opt{tocdepth}, the table-of-contents depth manually.
 %  \begin{function}{ tocdep }
@@ -270,7 +273,7 @@ The Current Maintainer of this work is
 %   The process of the macro \cs{setsecnum} can be 
 %   explained as follows.
 % \begin{enumerate}[label=Step \arabic*.]
-%   \item The main function eats the input, saying \opt{A,1.i}, 
+%   \item The main function eats the input, saying \opt{A,:1.i}, 
 %         and stores it in a token list.
 %   \item Replace abbrs by macros.
 %         In our example, it results 
@@ -313,102 +316,105 @@ The Current Maintainer of this work is
 %<*package>
 %<@@=syu>
 \NeedsTeXFormat{LaTeX2e}
-\RequirePackage{expl3}
-\ProvidesExplPackage{secnum}{2021/08/28}{}
+\RequirePackage{expl3,xparse,l3keys2e}
+\ProvidesExplPackage{secnum}{2022/01/29}{}
   { An intuitive way to format section numbering }
-\RequirePackage{xparse,l3keys2e}
 %    \end{macrocode}
 %
-%  \begin{variable}{ \l__syu_secnum_tl, \l__syu_secnum_seq }
-%   The variables are used to store the formatting information.
+%  \begin{variable}{ \g__syu_secnum_depth }
+%   This \meta{integer} counts the depth of section levels.
 %    \begin{macrocode}
-\tl_new:N \l__syu_secnum_tl
-\seq_new:N \l__syu_secnum_seq
-\int_new:N \l__syu_secnum_depth
+\int_new:N \g__syu_secnum_depth
 %    \end{macrocode}
 %  \end{variable}
 %
-%  \begin{variable}{ 
-%    \g__syu_chapter_tl, 
-%    \g__syu_section_tl,
-%    \g__syu_subsection_tl,
-%    \g__syu_subsubsection_tl,
-%    \g__syu_paragraph_tl,
-%    \g__syu_subparagraph_tl
-%   }
-%   The following variables are used to store 
-%   the individal formatting codes.
-%    \begin{macrocode}
-\tl_new:N \g__syu_chapter_tl
-\tl_new:N \g__syu_section_tl
-\tl_new:N \g__syu_subsection_tl
-\tl_new:N \g__syu_subsubsection_tl
-\tl_new:N \g__syu_paragraph_tl
-\tl_new:N \g__syu_subparagraph_tl
-%    \end{macrocode}
-%  \end{variable}
-%
-%  \begin{variable}{ \g__syu_if_thechapter_int }
+%  \begin{variable}{ \g__syu_ifchapter_int }
 %   This \meta{integer} encodes if \cs{thechapter} is defined.
 %    \begin{macrocode}
-\int_new:N \g__syu_if_thechapter_int
+\int_new:N \g__syu_ifchapter_int
 %    \end{macrocode}
 %   If \cs{thechapter} is defined, it is $1$.
 %    \begin{macrocode}
 \if_cs_exist:N \thechapter
-  \int_gset:Nn \g__syu_if_thechapter_int 1
+  \int_gset:Nn \g__syu_ifchapter_int 1
 %    \end{macrocode}
 %   Otherwise, it is $0$.
 %    \begin{macrocode}
 \else:
-  \int_gset:Nn \g__syu_if_thechapter_int 0
+  \int_gset:Nn \g__syu_ifchapter_int 0
 \fi:
 %    \end{macrocode}
 %  \end{variable}
 %
-%  \begin{variable}{ \l__syu_secnum_bkm }
+%  \begin{variable}{ \g__syu_secnum_bkm }
 %   This variable is used to store the breaking mark.
 %    \begin{macrocode}
-\tl_new:N \g__syu_secnum_bkmr
 \tl_gset:Nx \g__syu_secnum_bkmr {,}
 %    \end{macrocode}
-%   Note that one needs the following variants
+%   We need the following variants
 %    \begin{macrocode}
 \cs_generate_variant:Nn \tl_if_in:NnTF { NV }
 \cs_generate_variant:Nn \tl_remove_all:Nn { NV }
 %    \end{macrocode}
 %  \end{variable}
 %
+%  \begin{variable}{ 
+%    \g__syu_chapter_tl, 
+%    \g__syu_chapter_section_tl,
+%    \g__syu_section_tl,
+%    \g__syu_section_subsection_tl,
+%    \g__syu_subsection_tl,
+%    \g__syu_subsection_subsubsection_tl,
+%    \g__syu_subsubsection_tl,
+%    \g__syu_subsubsection_paragraph_tl,
+%    \g__syu_paragraph_tl,
+%    \g__syu_paragraph_subparagraph_tl,
+%    \g__syu_subparagraph_tl
+%   }
+%   The following variables are used to store 
+%   the individal formatting codes.
+%    \begin{macrocode}
+\tl_new:N \g__syu_chapter_tl
+\tl_new:N \g__syu_chapter_section_tl
+\tl_new:N \g__syu_section_tl
+\tl_new:N \g__syu_section_subsection_tl
+\tl_new:N \g__syu_subsection_tl
+\tl_new:N \g__syu_subsection_subsubsection_tl
+\tl_new:N \g__syu_subsubsection_tl
+\tl_new:N \g__syu_subsubsection_paragraph_tl
+\tl_new:N \g__syu_paragraph_tl
+\tl_new:N \g__syu_paragraph_subparagraph_tl
+\tl_new:N \g__syu_subparagraph_tl
+%    \end{macrocode}
+%  \end{variable}
+%
 %   \changes{2020/01/12}{2020/01/12}{Add package option to set \opt{tocdepth}.}
 % \subsection{Package option}
 %    \begin{macrocode}
-\keys_define:nn { syu / options }
-  {
+\keys_define:nn { syu / options }{
 %    \end{macrocode}
 %
 %  \begin{macro}{ tocdep }
 %   Set the table-of-contents depth.
 %    \begin{macrocode}
-    tocdep .code:n = 
-      { 
-        \int_const:Nn \g__syu_tocdep {#1} 
-        \setcounter{tocdepth}{ \g__syu_tocdep }
-      },
+  tocdep .code:n = { 
+    \int_const:Nn \g__syu_tocdep {#1} 
+    \setcounter{tocdepth}{ \g__syu_tocdep }
+  },
 %    \end{macrocode}
 %  \end{macro}
 %
 %  \begin{macro}{ breaking }
 %   Set the breaking mark used in \meta{num format}.
 %    \begin{macrocode}
-    breaking .code:n = 
-      { 
-        \tl_gset:Nx \g__syu_secnum_bkmr {#1} 
-      },
+  breaking .code:n = { 
+    \tl_gset:Nx \g__syu_secnum_bkmr {#1} 
+  },
 %    \end{macrocode}
 %  \end{macro}
 %
 %    \begin{macrocode}
-  }
+}
 %    \end{macrocode}
 %
 %   Passing keys to options.
@@ -420,57 +426,43 @@ The Current Maintainer of this work is
 %  \begin{macro}{\setsecnum}
 %   Here is the definition of the main function \cs{setsecnum}.
 %    \begin{macrocode}
-\DeclareDocumentCommand{\setsecnum}{m}
-  {
+\DeclareDocumentCommand{\setsecnum}{m}{
 %    \end{macrocode}
 %   Store the input in.
 %    \begin{macrocode}
-    \tl_set:Nn \l__syu_secnum_tl {#1}
+  \tl_set:Nn \l__syu_secnum_tl {#1}
 %    \end{macrocode}
 %   Replace syntax abbrs by corresponding macros.
 %    \begin{macrocode}
-    \__syu_secnum_unabbr:N \l__syu_secnum_tl
+  \__syu_secnum_unabbr:N \l__syu_secnum_tl
 %    \end{macrocode}
 %   Split into a sequence by macros.
 %    \begin{macrocode}
-    \__syu_split_by_macros:NN \l__syu_secnum_tl \l__syu_secnum_seq
+  \__syu_split_by_macros:NNN 
+    \l__syu_secnum_tl \l__syu_secnum_seq \g__syu_secnum_depth
 %    \end{macrocode}
 %   Read formatting information.
 %    \begin{macrocode}
-    \__syu_secnum_from_seq:N \l__syu_secnum_seq
+  \__syu_secnum_from_seq:N \l__syu_secnum_seq
 %    \end{macrocode}
 %   Set the \opt{secnumdepth} and \opt{tocdepth}.
 %   \changes{2020/01/12}{2020/01/12}{Add codes to set \opt{tocdepth}.}
 %    \begin{macrocode}
-    \int_set:Nn \l__syu_secnum_depth 
-      {  
-        \seq_count:N \l__syu_secnum_seq
-      }
-    \setcounter{secnumdepth}
-      { 
-        \int_eval:n 
-          { 
-            \l__syu_secnum_depth - \g__syu_if_thechapter_int 
-          } 
-      }
-    \int_if_exist:NTF \g__syu_tocdep 
-      {
-        \setcounter{tocdepth}{ \g__syu_tocdep }
-      }
-      {
-        \setcounter{tocdepth}
-          { 
-            \int_eval:n 
-              { 
-                \l__syu_secnum_depth - \g__syu_if_thechapter_int 
-              } 
-          }
-      }
+  \setcounter{secnumdepth}{ 
+    \int_eval:n { \g__syu_secnum_depth - \g__syu_ifchapter_int } 
+  }
+  \int_if_exist:NTF \g__syu_tocdep {
+    \setcounter{tocdepth}{ \g__syu_tocdep }
+  }{
+    \setcounter{tocdepth}{ 
+      \int_eval:n { \g__syu_secnum_depth - \g__syu_ifchapter_int } 
+    }
+  }
 %    \end{macrocode}
 %   Format numberings.
 %    \begin{macrocode}
-    \__syu_secnum:
-  }
+  \__syu_secnum:
+}
 %    \end{macrocode}
 %  \end{macro}
 %
@@ -479,36 +471,39 @@ The Current Maintainer of this work is
 %   This function replace the abbrs in a \meta{tl var}  
 %   by expansions.
 %    \begin{macrocode}
-\cs_new_protected:Npn \__syu_secnum_unabbr:N #1
-  {
-    \regex_replace_all:nnN {A} {\c{Alph}} #1
-    \regex_replace_all:nnN {a} {\c{alph}} #1
-    \regex_replace_all:nnN {I} {\c{Roman}} #1
-    \regex_replace_all:nnN {i} {\c{roman}} #1
-    \regex_replace_all:nnN {1} {\c{arabic}} #1
-  }
+\cs_new_protected:Npn \__syu_secnum_unabbr:N #1 {
+  \regex_replace_all:nnN {A} {\c{Alph}} #1
+  \regex_replace_all:nnN {a} {\c{alph}} #1
+  \regex_replace_all:nnN {I} {\c{Roman}} #1
+  \regex_replace_all:nnN {i} {\c{roman}} #1
+  \regex_replace_all:nnN {1} {\c{arabic}} #1
+}
 %    \end{macrocode}
 %  \end{variable}
 %
 % \subsection{Split to sequence}
-%  \begin{variable}{ \__syu_split_by_macros:NN }
-%   This function split a \meta{tl var} into a \meta{sequence} 
-%   by macros.
+%  \changes{2022/01/29}{2022/01/29}{Rewrite the split function}
+%  \begin{variable}{ \__syu_split_by_macros:NNN }
+%   This function splits a \meta{tl var} into a \meta{sequence} 
+%   by macros and provides the number of macros it contains.
 %    \begin{macrocode}
-\cs_new_protected:Npn \__syu_split_by_macros:NN #1 #2
-  {
-    \tl_clear:N \l_tmpa_tl
-    \seq_clear:N #2
-    \tl_map_inline:Nn #1 
-      {
-        \tl_put_right:Nn \l_tmpa_tl ##1
-        \__syu_if_macro:nT ##1 
-          {
-            \seq_put_right:NV #2 \l_tmpa_tl 
-            \tl_clear:N \l_tmpa_tl
-          }
-      }
+\cs_new_protected:Npn \__syu_split_by_macros:NNN #1 #2 #3 {
+  \tl_set:Nn \l_tmpa_tl {S}
+  \seq_clear:N #2
+  \int_set:Nn #3 {0}
+  \tl_map_inline:Nn #1 {
+    \__syu_if_macro:nTF ##1 {
+      \seq_put_right:NV #2 \l_tmpa_tl 
+      \tl_clear:N \l_tmpa_tl
+      \tl_put_right:Nn \l_tmpa_tl ##1
+      \seq_put_right:NV #2 \l_tmpa_tl
+      \tl_clear:N \l_tmpa_tl
+      \int_incr:N #3
+    }{
+      \tl_put_right:Nn \l_tmpa_tl ##1
+    }
   }
+}
 %    \end{macrocode}
 %  \end{variable}
 %   But how to see if an \meta{item} in the token list is a macro?
@@ -529,25 +524,24 @@ The Current Maintainer of this work is
 %   Then, define a conditional testing if the input is a macro. 
 %   Note that I use \cs{if_meaning} rather than \cs{tl_if_eq:NNTF}.
 %    \begin{macrocode}
-\prg_new_protected_conditional:Npnn \__syu_if_macro:n #1 { T , F , TF }
-  {
-    \group_begin:
-      \tl_set:Nx \l_tmpa_tl {\meaning #1}
-      \tl_set:Nx \l_tmpa_tl {\tl_range:Nnn \l_tmpa_tl {1} {5}}
+\prg_new_protected_conditional:Npnn \__syu_if_macro:n #1 { T , F , TF }{
+  \group_begin:
+    \tl_set:Nx \l_tmpa_tl {\meaning #1}
+    \tl_set:Nx \l_tmpa_tl {\tl_range:Nnn \l_tmpa_tl {1} {5}}
 %    \end{macrocode}
 %   This is a trick to keep \cs{l_tmpa_tl} in the current local group
 %    \begin{macrocode}
-    \exp_after:wN
-    \group_end:
+  \exp_after:wN
+  \group_end:
 %    \end{macrocode}
 %   while throwing the comparison result out.
 %    \begin{macrocode}
-      \if_meaning:w \l_tmpa_tl \g__syu_macro_tl
-        \prg_return_true:
-      \else:
-        \prg_return_false:
-      \fi:
-  }
+    \if_meaning:w \l_tmpa_tl \g__syu_macro_tl
+      \prg_return_true:
+    \else:
+      \prg_return_false:
+    \fi:
+}
 %    \end{macrocode}
 %  \end{variable}
 %
@@ -555,25 +549,55 @@ The Current Maintainer of this work is
 %  \begin{variable}{ \__syu_secnum_from_seq:N  }
 %   Read the formatting info from given \meta{sequence}.
 %    \begin{macrocode}
-\cs_new_protected:Npn \__syu_secnum_from_seq:N #1
-  {
+\cs_new_protected:Npn \__syu_secnum_from_seq:N #1 {
 %    \end{macrocode}
 %   Use \cs{tl_gset:Nx} since: 1, these data are global and 
 %   2: I need them eating the fully expanded results.
 %    \begin{macrocode}
-    \tl_gset:Nx \g__syu_chapter_tl 
-      { \seq_item:Nn #1 { \g__syu_if_thechapter_int } }
-    \tl_gset:Nx \g__syu_section_tl 
-      { \seq_item:Nn #1 { 1 + \g__syu_if_thechapter_int } }
+  \int_if_odd:nTF \g__syu_ifchapter_int {
+    \tl_gset:Nx \g__syu_chapter_tl
+      { \seq_item:Nn #1 { 2 } }
+    \tl_gset:Nx \g__syu_chapter_section_tl
+      { \seq_item:Nn #1 { 3 } }
+    \tl_gset:Nx \g__syu_section_tl
+      { \seq_item:Nn #1 { 4 } }
+    \tl_gset:Nx \g__syu_section_subsection_tl
+      { \seq_item:Nn #1 { 5 } }
     \tl_gset:Nx \g__syu_subsection_tl
-      { \seq_item:Nn #1 { 2 + \g__syu_if_thechapter_int } }
+      { \seq_item:Nn #1 { 6 } }
+    \tl_gset:Nx \g__syu_subsection_subsubsection_tl
+      { \seq_item:Nn #1 { 7 } }
     \tl_gset:Nx \g__syu_subsubsection_tl
-      { \seq_item:Nn #1 { 3 + \g__syu_if_thechapter_int } }
+      { \seq_item:Nn #1 { 8 } }
+    \tl_gset:Nx \g__syu_subsubsection_paragraph_tl
+      { \seq_item:Nn #1 { 9 } }
     \tl_gset:Nx \g__syu_paragraph_tl
-      { \seq_item:Nn #1 { 4 + \g__syu_if_thechapter_int } }
+      { \seq_item:Nn #1 { 10 } }
+    \tl_gset:Nx \g__syu_paragraph_subparagrah_tl
+      { \seq_item:Nn #1 { 11 } }
     \tl_gset:Nx \g__syu_subparagraph_tl
-      { \seq_item:Nn #1 { 5 + \g__syu_if_thechapter_int } }
+      { \seq_item:Nn #1 { 12 } }
+  }{
+    \tl_gset:Nx \g__syu_section_tl
+      { \seq_item:Nn #1 { 2 } }
+    \tl_gset:Nx \g__syu_section_subsection_tl
+      { \seq_item:Nn #1 { 3 } }
+    \tl_gset:Nx \g__syu_subsection_tl
+      { \seq_item:Nn #1 { 4 } }
+    \tl_gset:Nx \g__syu_subsection_subsubsection_tl
+      { \seq_item:Nn #1 { 5 } }
+    \tl_gset:Nx \g__syu_subsubsection_tl
+      { \seq_item:Nn #1 { 6 } }
+    \tl_gset:Nx \g__syu_subsubsection_paragraph_tl
+      { \seq_item:Nn #1 { 7 } }
+    \tl_gset:Nx \g__syu_paragraph_tl
+      { \seq_item:Nn #1 { 8 } }
+    \tl_gset:Nx \g__syu_paragraph_subparagrah_tl
+      { \seq_item:Nn #1 { 9 } }
+    \tl_gset:Nx \g__syu_subparagraph_tl
+      { \seq_item:Nn #1 { 10 } }
   }
+}
 %    \end{macrocode}
 %  \end{variable}
 %
@@ -581,140 +605,214 @@ The Current Maintainer of this work is
 %  \begin{variable}{ \__syu_secnum:  }
 %   Formatting section numbering.
 %    \begin{macrocode}
-\cs_new:Nn \__syu_secnum: 
-  {
+\cs_new:Nn \__syu_secnum: {
 %    \end{macrocode}
 % \subsubsection{Detect if there is \cs{thechapter}}\noindent
 %   When \cs{thechapter} is defined, start from it.
 %    \begin{macrocode}
-    \if_cs_exist:N \thechapter
-      \renewcommand*{\thechapter}
-        { \g__syu_chapter_tl {chapter} }
+  \if_cs_exist:N \thechapter
+    \renewcommand*{\thechapter}{ \g__syu_chapter_tl {chapter} }
 %    \end{macrocode}
 %   Test if the numbering breaks before section.
 %    \begin{macrocode}
-    \tl_if_in:NVTF \g__syu_section_tl \g__syu_secnum_bkmr
-      {
-        \tl_remove_all:NV \g__syu_section_tl \g__syu_secnum_bkmr
-        \renewcommand*{\thesection}
-          { \g__syu_section_tl {section} }
+    \tl_if_in:NVTF \g__syu_chapter_section_tl \g__syu_secnum_bkmr {
+%    \end{macrocode}
+%   Remove the breaking marker.
+%    \begin{macrocode}
+      \tl_remove_all:NV 
+        \g__syu_chapter_section_tl \g__syu_secnum_bkmr
+%    \end{macrocode}
+%   Format \cs{thesection}.
+%    \begin{macrocode}
+      \renewcommand*{\thesection}{ \g__syu_section_tl {section} }	
+%    \end{macrocode}
+%   Restore the \cs{p@}s.
+%    \begin{macrocode}
+      \makeatletter
+        \renewcommand*{\p@section}{ 
+          \thechapter\g__syu_chapter_section_tl 
+        }
+        \renewcommand*{\p@subsection}{ \p@section}
+        \renewcommand*{\p@subsubsection}{ \p@section }
+        \renewcommand*{\p@paragraph}{ \p@section}
+        \renewcommand*{\p@subparagraph}{ \p@section }
+      \makeatother
+    }{
+%    \end{macrocode}
+%   Format \cs{thesection}.
+%    \begin{macrocode}
+      \renewcommand*{\thesection}{ 
+        \thechapter\g__syu_chapter_section_tl
+        \g__syu_section_tl {section} 
       }
-      {
-        \renewcommand*{\thesection}
-          { 
-            \thechapter
-            \g__syu_section_tl {section} 
-          }
-      }
+    }
 %    \end{macrocode}
 %   Otherwise start from \cs{thesection}.
 %    \begin{macrocode}
-    \else:
-      \renewcommand*{\thesection}
-        { \g__syu_section_tl {section} }
-    \fi:
+  \else:
+    \renewcommand*{\thesection}{ \g__syu_section_tl {section} }
+  \fi:
 %    \end{macrocode}
 %
 %   \changes{2021/08/28}{2021/08/28}{The usage of breaking commas}
 % \subsubsection{Subsections}\noindent
 %   Test if the subsections are needed to be numbered.
 %    \begin{macrocode}
-    \tl_if_empty:NTF \g__syu_subsection_tl
-      {}
-      {
+  \tl_if_empty:NF \g__syu_subsection_tl {
 %    \end{macrocode}
 %   Test if the numbering breaks before subsection.
 %    \begin{macrocode}
-        \tl_if_in:NVTF \g__syu_subsection_tl \g__syu_secnum_bkmr
-          {
-            \tl_remove_all:NV \g__syu_subsection_tl \g__syu_secnum_bkmr
-            \renewcommand*{\thesubsection}
-              { \g__syu_subsection_tl {subsection} }
-          }
-          {
-            \renewcommand*{\thesubsection}
-              { 
-                \thesection
-                \g__syu_subsection_tl {subsection} 
-              }
-          }
+    \tl_if_in:NVTF \g__syu_section_subsection_tl \g__syu_secnum_bkmr {
+%    \end{macrocode}
+%   Remove the breaking marker.
+%    \begin{macrocode}
+      \tl_remove_all:NV 
+        \g__syu_section_subsection_tl \g__syu_secnum_bkmr
+%    \end{macrocode}
+%   Format \cs{thesubsection}.
+%    \begin{macrocode}
+      \renewcommand*{\thesubsection}{ \g__syu_subsection_tl {subsection} }
+%    \end{macrocode}
+%   Restore the \cs{p@}s.
+%    \begin{macrocode}
+      \makeatletter
+        \renewcommand*{\p@subsection}{
+          \p@section\g__syu_section_tl{section}
+          \g__syu_section_subsection_tl
+        }
+        \renewcommand*{\p@subsubsection}{ \p@subsection }
+        \renewcommand*{\p@paragraph}{ \p@subsection}
+        \renewcommand*{\p@subparagraph}{ \p@subsection }
+      \makeatother
+    }{
+%    \end{macrocode}
+%   Format \cs{thesubsection}.
+%    \begin{macrocode}
+      \renewcommand*{\thesubsection}{ 
+        \thesection\g__syu_section_subsection_tl 
+        \g__syu_subsection_tl {subsection} 
       }
+    }
+	}
 %    \end{macrocode}
 %
 % \subsubsection{Subsubsections}\noindent
 %   Test if the subsubsections are needed to be numbered.
 %    \begin{macrocode}
-    \tl_if_empty:NTF \g__syu_subsubsection_tl
-      {}
-      {
+  \tl_if_empty:NF \g__syu_subsubsection_tl {
 %    \end{macrocode}
 %   Test if the numbering breaks before subsubsection.
 %    \begin{macrocode}
-        \tl_if_in:NVTF \g__syu_subsubsection_tl \g__syu_secnum_bkmr
-          {
-            \tl_remove_all:NV \g__syu_subsubsection_tl \g__syu_secnum_bkmr
-            \renewcommand*{\thesubsubsection}
-              { \g__syu_subsubsection_tl {subsubsection} }
-          }
-          {
-            \renewcommand*{\thesubsubsection}
-              { 
-                \thesubsection
-                \g__syu_subsubsection_tl {subsubsection} 
-              }
-          }
+    \tl_if_in:NVTF \g__syu_subsection_subsubsection_tl \g__syu_secnum_bkmr {
+%    \end{macrocode}
+%   Remove the breaking marker.
+%    \begin{macrocode}
+      \tl_remove_all:NV 
+        \g__syu_subsection_subsubsection_tl \g__syu_secnum_bkmr
+%    \end{macrocode}
+%   Format \cs{thesubsubsection}.
+%    \begin{macrocode}
+      \renewcommand*{\thesubsubsection}
+        { \g__syu_subsubsection_tl {subsubsection} }
+%    \end{macrocode}
+%   Restore the \cs{p@}s.
+%    \begin{macrocode}
+      \makeatletter
+        \renewcommand*{\p@subsubsection}{
+          \p@subsection\g__syu_subsection_tl {subsection}
+          \g__syu_subsection_subsubsection_tl
+        }
+        \renewcommand*{\p@paragraph}{ \p@subsubsection}
+        \renewcommand*{\p@subparagraph}{ \p@subsubsection }
+      \makeatother
+    }{
+%    \end{macrocode}
+%   Format \cs{thesubsubsection}.
+%    \begin{macrocode}
+      \renewcommand*{\thesubsubsection}{ 
+        \thesubsection\g__syu_subsection_subsubsection_tl
+        \g__syu_subsubsection_tl {subsubsection} 
       }
+    }
+	}
 %    \end{macrocode}
 %
 % \subsubsection{Paragraphs}\noindent
 %   Test if the paragraphs are needed to be numbered.
 %    \begin{macrocode}
-    \tl_if_empty:NTF \g__syu_paragraph_tl
-      {}
-      {
+  \tl_if_empty:NF \g__syu_paragraph_tl {
 %    \end{macrocode}
 %   Test if the numbering breaks before paragraph.
 %    \begin{macrocode}
-        \tl_if_in:NVTF \g__syu_paragraph_tl \g__syu_secnum_bkmr
-          {
-            \tl_remove_all:NV \g__syu_paragraph_tl \g__syu_secnum_bkmr
-            \renewcommand*{\theparagraph}
-              { \g__syu_paragraph_tl {paragraph} }
-          }
-          {
-            \renewcommand*{\theparagraph}
-              { 
-                \thesubsubsection
-                \g__syu_paragraph_tl {paragraph} 
-              }
-          }
+    \tl_if_in:NVTF \g__syu_subsubsection_paragraph_tl \g__syu_secnum_bkmr {
+%    \end{macrocode}
+%   Remove the breaking marker.
+%    \begin{macrocode}
+      \tl_remove_all:NV 
+        \g__syu_subsubsection_paragraph_tl \g__syu_secnum_bkmr
+%    \end{macrocode}
+%   Format \cs{theparagraph}.
+%    \begin{macrocode}
+      \renewcommand*{\theparagraph}{ \g__syu_paragraph_tl {paragraph} }
+%    \end{macrocode}
+%   Restore the \cs{p@}s.
+%    \begin{macrocode}
+      \makeatletter
+        \renewcommand*{\p@paragraph}{
+          \p@subsubsection\g__syu_subsubsection_tl {subsubsection}
+          \g__syu_subsubsection_paragraph_tl
+        }
+        \renewcommand*{\p@subparagraph}{ \p@paragraph }
+      \makeatother
+    }{
+%    \end{macrocode}
+%   Format \cs{theparagraph}.
+%    \begin{macrocode}
+      \renewcommand*{\theparagraph}{ 
+        \thesubsubsection\g__syu_subsubsection_paragraph_tl
+        \g__syu_paragraph_tl {paragraph} 
       }
+    }
+	}
 %    \end{macrocode}
 %
 % \subsubsection{Subparagraphs}\noindent
 %   Test if the subparagraphs are needed to be numbered.
 %    \begin{macrocode}
-    \tl_if_empty:NTF \g__syu_subparagraph_tl
-      {}
-      {
+  \tl_if_empty:NF \g__syu_subparagraph_tl {
 %    \end{macrocode}
 %   Test if the numbering breaks before paragraph.
 %    \begin{macrocode}
-        \tl_if_in:NVTF \g__syu_subparagraph_tl \g__syu_secnum_bkmr
-          {
-            \tl_remove_all:NV \g__syu_subparagraph_tl \g__syu_secnum_bkmr
-            \renewcommand*{\thesubparagraph}
-              { \g__syu_subparagraph_tl {subparagraph} }
-          }
-          {
-            \renewcommand*{\thesubparagraph}
-              { 
-                \theparagraph
-                \g__syu_subparagraph_tl {subparagraph} 
-              }
-          }
+    \tl_if_in:NVTF \g__syu_paragraph_subparagrah_tl \g__syu_secnum_bkmr {
+%    \end{macrocode}
+%   Remove the breaking marker.
+%    \begin{macrocode}
+      \tl_remove_all:NV 
+        \g__syu_paragraph_subparagrah_tl \g__syu_secnum_bkmr
+%    \end{macrocode}
+%   Format \cs{thesubparagraph}.
+%    \begin{macrocode}
+      \renewcommand*{\thesubparagraph}{ \g__syu_subparagraph_tl {subparagraph} }
+%    \end{macrocode}
+%   Restore the \cs{p@}s.
+%    \begin{macrocode}
+      \makeatletter
+        \renewcommand*{\p@subparagraph}{
+          \p@paragraph\g__syu_paragraph_tl {paragraph}
+          \g__syu_paragraph_subparagrah_tl
+        }
+      \makeatother
+    }{
+%    \end{macrocode}
+%   Format \cs{thesubparagraph}.
+%    \begin{macrocode}
+      \renewcommand*{\thesubparagraph}{ 
+        \theparagraph\g__syu_paragraph_subparagrah_tl
+        \g__syu_subparagraph_tl {subparagraph} 
       }
-   }
+    }
+  }
+}
 %    \end{macrocode}
 %  \end{variable}
 %

@@ -5,7 +5,7 @@ This package provides a macro `\setsecnum` to format section numbering intuitive
 
 ## Usage
 
-One can simply use `\setsecnum{A,1.i}` to set the section numbering
+One can simply use `\setsecnum{A,:1.i}` to set the section numbering
 format as `Alph` for the sections, `arabic` for the subsections and
 `arabic.roman` for the subsubsections and
 the `secnumdepth` and `tocdepth` will be 3.
@@ -14,7 +14,7 @@ If one want to set the tocdepth manually,
 there is an option `tocdep` for it.
 
 One may notice that the comma `,` plays a special role in the numbering format:
-for deep levels, the numbering before the comma are hided.
+for deep levels, the numbering before the comma are hided in the titles.
 
 ## Installation
 
