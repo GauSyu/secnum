@@ -277,10 +277,11 @@ The Current Maintainer of this work is
 %         and stores it in a token list.
 %   \item Replace abbrs by macros.
 %         In our example, it results 
-%         ``\cs{Alph}\opt{,}\cs{arabic}\opt{.}\cs{roman}''
+%         ``\cs{Alph}\opt{,:}\cs{arabic}\opt{.}\cs{roman}''
 %   \item Split this token list into a sequence by macros. 
 %         In our example, it results ``\cs{Alph}'', 
-%         ``\opt{,}\cs{arabic}'' and ``\opt{.}\cs{roman}''.
+%         ``\opt{,:}'', ``\cs{arabic}'', ``\opt{.}'', 
+%         and ``\cs{roman}''.
 %   \item Store those codes in indivial containers.
 %   \item Detect if there is \cs{thechapter}. 
 %         Skip the chapter level if not.
@@ -296,6 +297,10 @@ The Current Maintainer of this work is
 %    \renewcommand*{\thesection}{\Alph{section}}
 %    \renewcommand*{\thesubsection}{\arabic{subsection}}
 %    \renewcommand*{\thesubsubsection}{thesubsection.\roman{subsubsection}}
+%    \makeatletter
+%      \renewcommand*{\p@subsection}{\Alph{section}:}
+%      \renewcommand*{\p@subsubsection}{\Alph{section}:}
+%    \makeatother
 %  \end{verbatim}
 %   
 % \end{documentation}
@@ -317,7 +322,7 @@ The Current Maintainer of this work is
 %<@@=syu>
 \NeedsTeXFormat{LaTeX2e}
 \RequirePackage{expl3,xparse,l3keys2e}
-\ProvidesExplPackage{secnum}{2022/01/29}{}
+\ProvidesExplPackage{secnum}{2022/01/30}{}
   { An intuitive way to format section numbering }
 %    \end{macrocode}
 %
@@ -482,7 +487,7 @@ The Current Maintainer of this work is
 %  \end{variable}
 %
 % \subsection{Split to sequence}
-%  \changes{2022/01/29}{2022/01/29}{Rewrite the split function}
+%  \changes{2022/01/29}{2022/01/29}{Rewrite the split functions.}
 %  \begin{variable}{ \__syu_split_by_macros:NNN }
 %   This function splits a \meta{tl var} into a \meta{sequence} 
 %   by macros and provides the number of macros it contains.
@@ -546,6 +551,7 @@ The Current Maintainer of this work is
 %  \end{variable}
 %
 % \subsection{Read formatting info}
+%  \changes{2022/01/29}{2022/01/29}{Write them separately.}
 %  \begin{variable}{ \__syu_secnum_from_seq:N  }
 %   Read the formatting info from given \meta{sequence}.
 %    \begin{macrocode}
@@ -602,6 +608,7 @@ The Current Maintainer of this work is
 %  \end{variable}
 %
 % \subsection{Formatting}
+%  \changes{2022/01/29}{2022/01/29}{The whole function \cs{__syu_secnum:} is rewritten.}
 %  \begin{variable}{ \__syu_secnum:  }
 %   Formatting section numbering.
 %    \begin{macrocode}
@@ -654,7 +661,7 @@ The Current Maintainer of this work is
   \fi:
 %    \end{macrocode}
 %
-%   \changes{2021/08/28}{2021/08/28}{The usage of breaking commas}
+%   \changes{2021/08/28}{2021/08/28}{The usage of breaking commas.}
 % \subsubsection{Subsections}\noindent
 %   Test if the subsections are needed to be numbered.
 %    \begin{macrocode}
